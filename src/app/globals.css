@@ -25,3 +25,135 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* TipTap Editor Styles - Mobile First */
+.ProseMirror {
+  outline: none;
+  padding: 16px;
+  min-height: calc(100vh - 112px);
+  font-family: 'Georgia', serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  background: white;
+}
+
+@media (min-width: 640px) {
+  .ProseMirror {
+    padding: 32px 48px;
+    font-size: 12pt;
+    min-height: calc(100vh - 128px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .ProseMirror {
+    padding: 64px;
+  }
+}
+
+.ProseMirror h1 {
+  font-size: 1.75rem;
+  font-weight: normal;
+  margin: 16px 0 8px 0;
+  line-height: 1.15;
+  color: #1a1a1a;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: normal;
+  margin: 12px 0 6px 0;
+  line-height: 1.15;
+  color: #1a1a1a;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: normal;
+  margin: 10px 0 4px 0;
+  line-height: 1.15;
+  color: #1a1a1a;
+}
+
+@media (min-width: 640px) {
+  .ProseMirror h1 {
+    font-size: 20pt;
+    margin: 24px 0 12px 0;
+  }
+
+  .ProseMirror h2 {
+    font-size: 16pt;
+    margin: 18px 0 6px 0;
+  }
+
+  .ProseMirror h3 {
+    font-size: 14pt;
+    margin: 16px 0 4px 0;
+  }
+}
+
+.ProseMirror p {
+  margin: 6px 0;
+  line-height: 1.6;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  margin: 6px 0;
+  padding-left: 36px;
+}
+
+.ProseMirror li {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.ProseMirror ul li {
+  list-style-type: disc;
+}
+
+.ProseMirror ol li {
+  list-style-type: decimal;
+}
+
+.ProseMirror strong {
+  font-weight: bold;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+/* Focus styles */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Selection styles */
+.ProseMirror::selection {
+  background: #b3d7ff;
+}
+
+.ProseMirror *::selection {
+  background: #b3d7ff;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
