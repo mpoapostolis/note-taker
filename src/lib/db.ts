@@ -38,29 +38,27 @@ export async function updateDoc(
   title?: string,
   content?: string
 ): Promise<Document | null> {
-  const now = new Date();
-
   // Use separate queries based on what needs to be updated
   let doc;
 
   if (title !== undefined && content !== undefined) {
     [doc] = await sql`
       UPDATE docs 
-      SET title = ${title}, content = ${content}, updatedAt = ${now}
+      SET title = ${title}, content = ${content}
       WHERE id = ${id}
       RETURNING *
     `;
   } else if (title !== undefined) {
     [doc] = await sql`
       UPDATE docs 
-      SET title = ${title}, updatedAt = ${now}
+      SET title = ${title}
       WHERE id = ${id}
       RETURNING *
     `;
   } else if (content !== undefined) {
     [doc] = await sql`
       UPDATE docs 
-      SET content = ${content}, updatedAt = ${now}
+      SET content = ${content}
       WHERE id = ${id}
       RETURNING *
     `;

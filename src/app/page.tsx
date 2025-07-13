@@ -70,15 +70,24 @@ export default async function Home() {
                       </div>
                       <p className="text-sm text-base-content/60">
                         {doc.content
-                          ? `${doc.content.substring(0, 100)}...`
+                          ? `${doc.content
+                              ?.replace(/<[^>]*>?/g, "")
+                              .substring(0, 100)}...`
                           : "No content"}
                       </p>
                       <div className="flex items-center gap-4 mt-3">
                         <div className="badge badge-ghost badge-sm">
                           Document
                         </div>
+                        {doc.createdAt && (
+                          <span className="text-xs text-base-content/50">
+                            Created{" "}
+                            {formatDistanceToNow(new Date(doc.createdAt))}
+                          </span>
+                        )}
                         {doc.updatedAt && (
                           <span className="text-xs text-base-content/50">
+                            Updated{" "}
                             {formatDistanceToNow(new Date(doc.updatedAt))}
                           </span>
                         )}
