@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -30,28 +30,31 @@ interface Document {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+function useDocument(id?: string) {
+  return useSWR<Document>(id && `/api/docs/${id}`, fetcher);
+}
+
 export default function DocumentEditor() {
   const params = useParams();
-  const { data: document, mutate } = useSWR<Document>(
-    `/api/docs/${params.id}`,
-    fetcher
-  );
+  const {
+    data: document,
+    mutate,
+    isLoading,
+    isValidating,
+  } = useDocument(params.id?.toString());
 
-  const [title, setTitle] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const saveDocument = useCallback(
-    async (content: string, titleToSave: string) => {
-      if (!document || !isInitialized) return;
+    async (content: string, title: string) => {
+      if (!document) return;
 
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
       saveTimeoutRef.current = setTimeout(async () => {
-        setIsSaving(true);
         try {
           const response = await fetch(`/api/docs/${document.id}`, {
             method: "PATCH",
@@ -59,7 +62,7 @@ export default function DocumentEditor() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              title: titleToSave,
+              title,
               content,
             }),
           });
@@ -70,17 +73,15 @@ export default function DocumentEditor() {
           }
         } catch (error) {
           console.error("Save failed:", error);
-        } finally {
-          setIsSaving(false);
         }
       }, 1000);
     },
-    [document, mutate, isInitialized]
+    [document, mutate]
   );
 
   const editor = useEditor({
     extensions: [StarterKit, Underline, TextStyle, Color],
-    content: "<p>Start writing your document...</p>",
+    content: document?.content || "<p>Start writing your document...</p>",
     immediatelyRender: false,
     editorProps: {
       attributes: {
@@ -89,39 +90,43 @@ export default function DocumentEditor() {
       },
     },
     onUpdate: ({ editor }) => {
-      if (isInitialized) {
-        saveDocument(editor.getHTML(), title);
+      if (document && titleInputRef.current) {
+        saveDocument(editor.getHTML(), titleInputRef.current.value);
       }
     },
   });
 
-  // Initialize content and title when document loads
+  // Update editor content when document loads
   useEffect(() => {
-    if (document && editor && !isInitialized) {
-      setTitle(document.title || "");
-      if (document.content) {
+    if (document && editor && document.content) {
+      if (editor.getHTML() !== document.content) {
         editor.commands.setContent(document.content, false);
       }
-      setIsInitialized(true);
     }
-  }, [document, editor, isInitialized]);
+  }, [document, editor]);
+
+  // Update title input when document loads
+  useEffect(() => {
+    if (document && titleInputRef.current && document.title) {
+      if (titleInputRef.current.value !== document.title) {
+        titleInputRef.current.value = document.title;
+      }
+    }
+  }, [document]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value;
-    setTitle(newTitle);
-    if (editor && isInitialized) {
-      saveDocument(editor.getHTML(), newTitle);
+    if (editor && document) {
+      saveDocument(editor.getHTML(), e.target.value);
     }
   };
 
   const handleSave = async () => {
-    if (!document || !editor) return;
+    if (!document || !editor || !titleInputRef.current) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    setIsSaving(true);
     try {
       const response = await fetch(`/api/docs/${document.id}`, {
         method: "PATCH",
@@ -129,7 +134,7 @@ export default function DocumentEditor() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title,
+          title: titleInputRef.current.value,
           content: editor.getHTML(),
         }),
       });
@@ -140,8 +145,6 @@ export default function DocumentEditor() {
       }
     } catch (error) {
       console.error("Save failed:", error);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -152,7 +155,7 @@ export default function DocumentEditor() {
     }
   };
 
-  if (!document || !editor) {
+  if (!document || !editor || isLoading) {
     return (
       <div className="min-h-screen bg-base-200 flex items-center justify-center">
         <div className="flex items-center gap-3">
@@ -188,8 +191,9 @@ export default function DocumentEditor() {
 
                 <div className="min-w-0 flex-1">
                   <input
+                    ref={titleInputRef}
                     type="text"
-                    value={title}
+                    defaultValue={document?.title || ""}
                     onChange={handleTitleChange}
                     onKeyDown={handleKeyDown}
                     className="text-lg font-medium text-base-content bg-transparent border-none focus:outline-none focus:ring-0 w-full p-0 truncate"
@@ -202,7 +206,7 @@ export default function DocumentEditor() {
             {/* Right section */}
             <div className="flex items-center gap-3">
               <div className="text-sm text-base-content/60">
-                {isSaving && (
+                {isValidating && (
                   <span className="flex items-center gap-2">
                     <span className="loading loading-spinner loading-xs"></span>
                     Saving...
@@ -211,8 +215,8 @@ export default function DocumentEditor() {
               </div>
               <button
                 onClick={handleSave}
-                disabled={isSaving}
                 className="btn btn-sm btn-primary"
+                disabled={isLoading}
               >
                 Save
               </button>
