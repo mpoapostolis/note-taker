@@ -1,4 +1,4 @@
-# Note Taker
+# Note Taker [demo](https://note-taker-three-mu.vercel.app/)
 
 A modern, feature-rich note-taking application built with Next.js 15, TypeScript, and TipTap editor.
 
