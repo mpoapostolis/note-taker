@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -34,28 +34,42 @@ function useDocument(id?: string) {
   return useSWR<Document>(id && `/api/docs/${id}`, fetcher);
 }
 
-export default function DocumentEditor() {
-  const params = useParams();
-  const {
-    data: document,
-    mutate,
-    isLoading,
-    isValidating,
-  } = useDocument(params.id?.toString());
-
+function DocumentEditor({ document }: { document: Document }) {
+  const isSavingRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const savingIndicatorRef = useRef<HTMLSpanElement>(null);
+  const savedIndicatorRef = useRef<HTMLSpanElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+
+  const updateSavingUI = (saving: boolean) => {
+    isSavingRef.current = saving;
+
+    if (savingIndicatorRef.current) {
+      savingIndicatorRef.current.style.display = "flex";
+    }
+    if (savedIndicatorRef.current) {
+      savedIndicatorRef.current.style.display = !saving ? "block" : "none";
+    }
+    if (saveButtonRef.current) {
+      saveButtonRef.current.disabled = saving;
+      saveButtonRef.current.textContent = saving ? "Saving..." : "Save";
+    }
+  };
 
   const saveDocument = useCallback(
     async (content: string, title: string) => {
-      if (!document) return;
-
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
+      updateSavingUI(true);
       saveTimeoutRef.current = setTimeout(async () => {
         try {
+          console.log("Saving document...", {
+            title,
+            content: content.substring(0, 100),
+          });
           const response = await fetch(`/api/docs/${document.id}`, {
             method: "PATCH",
             headers: {
@@ -68,15 +82,18 @@ export default function DocumentEditor() {
           });
 
           if (response.ok) {
-            const updatedDoc = await response.json();
-            mutate(updatedDoc, false);
+            console.log("Document saved successfully");
+          } else {
+            console.error("Save failed with status:", response.status);
           }
         } catch (error) {
           console.error("Save failed:", error);
+        } finally {
+          updateSavingUI(false);
         }
       }, 1000);
     },
-    [document, mutate]
+    [document]
   );
 
   const editor = useEditor({
@@ -90,44 +107,30 @@ export default function DocumentEditor() {
       },
     },
     onUpdate: ({ editor }) => {
-      if (document && titleInputRef.current) {
+      if (titleInputRef.current) {
+        console.log("Editor updated, saving...");
         saveDocument(editor.getHTML(), titleInputRef.current.value);
       }
     },
   });
 
-  // Update editor content when document loads
-  useEffect(() => {
-    if (document && editor && document.content) {
-      if (editor.getHTML() !== document.content) {
-        editor.commands.setContent(document.content, false);
-      }
-    }
-  }, [document, editor]);
-
-  // Update title input when document loads
-  useEffect(() => {
-    if (document && titleInputRef.current && document.title) {
-      if (titleInputRef.current.value !== document.title) {
-        titleInputRef.current.value = document.title;
-      }
-    }
-  }, [document]);
-
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editor && document) {
+    if (editor) {
+      console.log("Title changed, saving...");
       saveDocument(editor.getHTML(), e.target.value);
     }
   };
 
   const handleSave = async () => {
-    if (!document || !editor || !titleInputRef.current) return;
+    if (!editor || !titleInputRef.current) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
+    updateSavingUI(true);
     try {
+      console.log("Manual save triggered");
       const response = await fetch(`/api/docs/${document.id}`, {
         method: "PATCH",
         headers: {
@@ -140,11 +143,14 @@ export default function DocumentEditor() {
       });
 
       if (response.ok) {
-        const updatedDoc = await response.json();
-        mutate(updatedDoc, false);
+        console.log("Manual save successful");
+      } else {
+        console.error("Manual save failed with status:", response.status);
       }
     } catch (error) {
-      console.error("Save failed:", error);
+      console.error("Manual save failed:", error);
+    } finally {
+      updateSavingUI(false);
     }
   };
 
@@ -155,15 +161,8 @@ export default function DocumentEditor() {
     }
   };
 
-  if (!document || !editor || isLoading) {
-    return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
-          <span className="text-base-content">Loading document...</span>
-        </div>
-      </div>
-    );
+  if (!editor) {
+    return null;
   }
 
   return (
@@ -206,17 +205,27 @@ export default function DocumentEditor() {
             {/* Right section */}
             <div className="flex items-center gap-3">
               <div className="text-sm text-base-content/60">
-                {isValidating && (
-                  <span className="flex items-center gap-2">
-                    <span className="loading loading-spinner loading-xs"></span>
-                    Saving...
-                  </span>
-                )}
+                <span
+                  ref={savingIndicatorRef}
+                  className="flex items-center gap-2"
+                  style={{ display: "none" }}
+                >
+                  <span className="loading loading-spinner loading-xs"></span>
+                  Saving...
+                </span>
+                <span
+                  ref={savedIndicatorRef}
+                  className="text-success"
+                  style={{ display: "block" }}
+                >
+                  Saved
+                </span>
               </div>
               <button
+                ref={saveButtonRef}
                 onClick={handleSave}
                 className="btn btn-sm btn-primary"
-                disabled={isLoading}
+                disabled={false}
               >
                 Save
               </button>
@@ -353,4 +362,26 @@ export default function DocumentEditor() {
       </main>
     </div>
   );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-base-200 flex items-center justify-center">
+      <div className="flex items-center gap-3">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+        <span className="text-base-content">Loading document...</span>
+      </div>
+    </div>
+  );
+}
+
+export default function DocumentPage() {
+  const params = useParams();
+  const { data: document, isLoading } = useDocument(params.id?.toString());
+
+  if (isLoading || !document) {
+    return <LoadingScreen />;
+  }
+
+  return <DocumentEditor document={document} />;
 }
