@@ -44,8 +44,8 @@ export async function PATCH(
       );
     }
 
-    revalidatePath("/");
-    revalidatePath(`/doc/${id}`);
+    await revalidatePath("/");
+    await revalidatePath(`/doc/${id}`);
     return NextResponse.json(updatedDoc);
   } catch (error) {
     console.error("Error updating document:", error);
