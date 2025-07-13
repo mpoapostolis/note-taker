@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDocById, updateDoc } from "../../../../lib/db";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   request: NextRequest,
@@ -43,6 +44,8 @@ export async function PATCH(
       );
     }
 
+    revalidatePath("/");
+    revalidatePath(`/doc/${id}`);
     return NextResponse.json(updatedDoc);
   } catch (error) {
     console.error("Error updating document:", error);

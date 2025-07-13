@@ -7,7 +7,6 @@ import { formatDistanceToNow } from "date-fns";
 
 export default async function Home() {
   const docs = await getAllDocs();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300">
       {/* Header */}
