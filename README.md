@@ -5,10 +5,10 @@ A modern, feature-rich note-taking application built with Next.js 15, TypeScript
 ## Screenshots
 
 ### Homepage - Document List
-![Homepage](./public/Screenshot%202025-07-13%20at%2011.25.49%20PM.png)
+![Homepage](https://github.com/mpoapostolis/note-taker/blob/main/public/Screenshot%202025-07-13%20at%2011.25.49%E2%80%AFPM.png?raw=true)
 
 ### Document Editor
-![Document Editor](./public/Screenshot%202025-07-13%20at%2011.26.04%20PM.png)
+![Document Editor](https://github.com/mpoapostolis/note-taker/blob/main/public/Screenshot%202025-07-13%20at%2011.26.04%E2%80%AFPM.png?raw=true)
 
 ## How to Use
 
