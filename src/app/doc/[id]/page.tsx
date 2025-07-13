@@ -274,6 +274,7 @@ function DocumentEditor() {
   const params = useParams();
   const { data: document } = useDocument(params.id?.toString());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const saveContent = useCallback(
     async (content: string) => {
@@ -282,6 +283,8 @@ function DocumentEditor() {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+
+      setIsSaving(true);
 
       saveTimeoutRef.current = setTimeout(async () => {
         try {
@@ -297,6 +300,8 @@ function DocumentEditor() {
           }
         } catch (error) {
           console.error("Save failed:", error);
+        } finally {
+          setIsSaving(false);
         }
       }, 1000);
     },
@@ -327,7 +332,15 @@ function DocumentEditor() {
 
       <main className="flex-1 bg-base-200">
         <div className="max-w-5xl mx-auto p-6">
-          <div className="bg-base-100 rounded-xl shadow-md border border-base-300 min-h-[calc(100vh-250px)]">
+          <div className="bg-base-100 rounded-xl shadow-md border border-base-300 min-h-[calc(100vh-250px)] relative">
+            {isSaving && (
+              <div className="absolute top-4 right-4 z-10">
+                <div className="flex items-center gap-2 bg-base-200 px-3 py-1 rounded-full text-sm text-base-content/60">
+                  <span className="loading loading-spinner loading-xs"></span>
+                  Saving...
+                </div>
+              </div>
+            )}
             <EditorContent
               editor={editor}
               className="prose prose-lg max-w-none w-full text-base-content"
